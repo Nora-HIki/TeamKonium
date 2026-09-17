@@ -1,5 +1,6 @@
 import requests
 import sys
+import textwrap
 import re
 import pprint
 import networkx as nx
@@ -8,7 +9,7 @@ import matplotlib.pyplot as plt
 import time
 from fast_sugiyama import from_edges
 
-matplotlib.use("MacOSX")
+matplotlib.use("TkAgg")
 
 
 
@@ -81,7 +82,6 @@ for node in scores:
 
 # Draw the graph
 pos = from_edges(G.edges()).to_dict()
-
 nx.draw_networkx_edges(
     G,
     pos,
@@ -99,7 +99,7 @@ nx.draw_networkx_nodes(
     pos,
     ax=ax,
     node_color="#6366f1",
-    node_size=2500,
+    node_size=3458,
     edgecolors="#a5b4fc",
     linewidths=2.5,
     alpha=0.95,
@@ -110,7 +110,7 @@ nx.draw_networkx_labels(
     G,
     pos,
     ax=ax,
-    labels={node: f"{node}\n{round(scores[node], 2)}" for node in scores},
+    labels={node: "\n".join(textwrap.wrap(f"{node}\n{round(scores[node], 2)}", width=8)) for node in scores},
     font_size=8,
     font_weight="bold",
     font_color="white"
