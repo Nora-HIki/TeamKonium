@@ -4,8 +4,18 @@ import re
 import pprint
 import networkx as nx
 import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+import time
+from fast_sugiyama import from_edges
+
+matplotlib.use("MacOSX")
+
+
+
+fig, ax = plt.subplots(figsize=(16, 10))
+
+fig.patch.set_facecolor("#0b1120")
+ax.set_facecolor("#0b1120")
 
 
 names=set()
@@ -47,32 +57,92 @@ G = nx.DiGraph()
 # Add dependency relationships
 G.add_edges_from(global_edgelist)
 
-deps = []
-packages = set()
-for (a,b) in global_edgelist:
-    packages.add(a)
-    packages.add(b)
+scores = {}
 
-package = 'jupyter-client' # Insert actual package name here
+def get_risk_score(node):
 
-for a,b in global_edgelist:
-    if a == package and b not in deps:
-        deps.append(a)
-    if b == package and a not in deps:
-        deps.append(b)
+    impact = G.in_degree(node)
+    complexity = G.out_degree(node)
+    transitive = len(nx.descendants(G, node))
 
-print(f"Dependency risk: {len(deps)/len(packages)}")
+    return (
+        0.5 * impact +
+        0.2 * complexity +
+        0.3 * transitive
+    )
+
+for node in G.nodes():
+    scores[node] = get_risk_score(node)
+
+max_score = max(scores.values(), default=1)
+
+for node in scores:
+    scores[node] = scores[node] / max_score * 100
+
 # Draw the graph
-pos = nx.spring_layout(G, seed=42)
+pos = from_edges(G.edges()).to_dict()
 
-nx.draw(
+nx.draw_networkx_edges(
     G,
     pos,
-    with_labels=True,
-    node_size=2000,
-    node_color="lightblue",
+    edge_color="#64748b",
+    width=1.8,
+    alpha=0.55,
     arrows=True,
-    font_size=12
+    arrowsize=18,
+    arrowstyle="-|>",
+    node_shape="s"
 )
 
+nx.draw_networkx_nodes(
+    G,
+    pos,
+    ax=ax,
+    node_color="#6366f1",
+    node_size=2500,
+    edgecolors="#a5b4fc",
+    linewidths=2.5,
+    alpha=0.95,
+    node_shape="s"
+)
+
+nx.draw_networkx_labels(
+    G,
+    pos,
+    ax=ax,
+    labels={node: f"{node}\n{round(scores[node], 2)}" for node in scores},
+    font_size=8,
+    font_weight="bold",
+    font_color="white"
+)
+
+
+ax.set_title(
+    f"Dependency Graph",
+    fontsize=20,
+    fontweight="bold",
+    color="white",
+    pad=25
+)
+
+stats = (
+    f"Packages: {G.number_of_nodes()}    "
+    f"Dependencies: {G.number_of_edges()}"
+)
+
+fig.text(
+    0.5,
+    0.03,
+    stats,
+    ha="center",
+    fontsize=12,
+    color="#94a3b8"
+)
+
+
+plt.tight_layout()
 plt.show()
+
+time.sleep(5)
+
+exit()
